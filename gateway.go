@@ -8,10 +8,28 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
+
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (sw *statusWriter) WriteHeader(code int) {
+	sw.status = code
+	sw.ResponseWriter.WriteHeader(code)
+}
+
+func (sw *statusWriter) Write(b []byte) (int, error) {
+	if sw.status == 0 {
+		sw.status = http.StatusOK
+	}
+	return sw.ResponseWriter.Write(b)
+}
 
 type gateway struct {
 	cfg       Config
@@ -65,6 +83,18 @@ func (gw *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
+
+	sw := &statusWriter{ResponseWriter: w}
+	start := time.Now()
+	defer func() {
+		duration := time.Since(start)
+		if sw.status == http.StatusNotFound {
+			log.Printf("WARN  %s %s -> %d (%s) — no matching route", r.Method, r.URL.Path, sw.status, duration)
+		} else {
+			log.Printf("INFO  %s %s -> %d (%s)", r.Method, r.URL.Path, sw.status, duration)
+		}
+	}()
+	w = sw
 
 	gw.addCORSHeaders(w, r)
 
