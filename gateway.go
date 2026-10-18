@@ -138,7 +138,7 @@ func (gw *gateway) addCORSHeaders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allowed := len(gw.cfg.CORSOrigins) == 0
+	allowed := false
 	for _, o := range gw.cfg.CORSOrigins {
 		if o == "*" || o == origin {
 			allowed = true
@@ -167,17 +167,27 @@ func (gw *gateway) validateToken(r *http.Request) (string, error) {
 		return "", fmt.Errorf("fetching JWKS: %w", err)
 	}
 
-	parseOpts := []jwt.ParseOption{
-		jwt.WithKeySet(keySet),
-		jwt.WithIssuer(gw.cfg.Issuer),
-		jwt.WithValidate(true),
+	buildOpts := func(ks jwk.Set) []jwt.ParseOption {
+		opts := []jwt.ParseOption{
+			jwt.WithKeySet(ks),
+			jwt.WithIssuer(gw.cfg.Issuer),
+			jwt.WithValidate(true),
+		}
+		if gw.cfg.Audience != "" {
+			opts = append(opts, jwt.WithAudience(gw.cfg.Audience))
+		}
+		return opts
 	}
-	if gw.cfg.Audience != "" {
-		parseOpts = append(parseOpts, jwt.WithAudience(gw.cfg.Audience))
-	}
-	token, err := jwt.Parse([]byte(tokenStr), parseOpts...)
+
+	token, err := jwt.Parse([]byte(tokenStr), buildOpts(keySet)...)
 	if err != nil {
-		return "", fmt.Errorf("invalid token: %w", err)
+		// Key may have rotated — refresh JWKS and retry once
+		if refreshed, refreshErr := gw.jwksCache.Refresh(r.Context(), gw.jwksURL); refreshErr == nil {
+			token, err = jwt.Parse([]byte(tokenStr), buildOpts(refreshed)...)
+		}
+		if err != nil {
+			return "", fmt.Errorf("invalid token: %w", err)
+		}
 	}
 
 	return token.Subject(), nil
