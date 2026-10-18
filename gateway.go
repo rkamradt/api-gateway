@@ -45,7 +45,7 @@ type proxyRoute struct {
 }
 
 func newGateway(ctx context.Context, cfg Config) (*gateway, error) {
-	jwksURL := "https://" + cfg.Auth0Domain + "/.well-known/jwks.json"
+	jwksURL := cfg.JWKSUrl
 
 	cache := jwk.NewCache(ctx)
 	if err := cache.Register(jwksURL); err != nil {
@@ -167,12 +167,15 @@ func (gw *gateway) validateToken(r *http.Request) (string, error) {
 		return "", fmt.Errorf("fetching JWKS: %w", err)
 	}
 
-	token, err := jwt.Parse([]byte(tokenStr),
+	parseOpts := []jwt.ParseOption{
 		jwt.WithKeySet(keySet),
-		jwt.WithIssuer("https://"+gw.cfg.Auth0Domain+"/"),
-		jwt.WithAudience(gw.cfg.Audience),
+		jwt.WithIssuer(gw.cfg.Issuer),
 		jwt.WithValidate(true),
-	)
+	}
+	if gw.cfg.Audience != "" {
+		parseOpts = append(parseOpts, jwt.WithAudience(gw.cfg.Audience))
+	}
+	token, err := jwt.Parse([]byte(tokenStr), parseOpts...)
 	if err != nil {
 		return "", fmt.Errorf("invalid token: %w", err)
 	}

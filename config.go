@@ -16,7 +16,8 @@ type Route struct {
 
 type Config struct {
 	Port        string
-	Auth0Domain string
+	JWKSUrl     string
+	Issuer      string
 	Audience    string
 	CORSOrigins []string
 	Routes      []Route
@@ -24,9 +25,10 @@ type Config struct {
 
 func mustLoadConfig() Config {
 	cfg := Config{
-		Port:        getEnv("PORT", "8080"),
-		Auth0Domain: mustGetEnv("AUTH0_DOMAIN"),
-		Audience:    mustGetEnv("AUTH0_AUDIENCE"),
+		Port:     getEnv("PORT", "8080"),
+		JWKSUrl:  mustGetEnv("JWKS_URL"),
+		Issuer:   mustGetEnv("OIDC_ISSUER"),
+		Audience: getEnv("OIDC_AUDIENCE", ""),
 	}
 
 	if origins := os.Getenv("CORS_ORIGINS"); origins != "" {
