@@ -4,9 +4,13 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build:
-    uses: rkamradt/ci-workflows/.github/workflows/perms-only.yml@main
+    uses: rkamradt/ci-workflows/.github/workflows/node-image.yml@main
     with:
       helm-chart-dir: api-gateway
     secrets: inherit
