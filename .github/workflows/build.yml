@@ -6,4 +6,7 @@ on:
 
 jobs:
   build:
-    uses: rkamradt/ci-workflows/.github/workflows/minimal.yml@main
+    uses: rkamradt/ci-workflows/.github/workflows/with-inputs.yml@main
+    with:
+      helm-chart-dir: api-gateway
+    secrets: inherit
