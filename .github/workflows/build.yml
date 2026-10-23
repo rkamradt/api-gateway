@@ -6,8 +6,4 @@ on:
 
 jobs:
   build:
-    uses: rkamradt/ci-workflows/.github/workflows/node-image.yml@main
-    with:
-      helm-chart-dir: api-gateway
-    secrets:
-      HELM_CHARTS_PAT: ${{ secrets.HELM_CHARTS_PAT }}
+    uses: rkamradt/ci-workflows/.github/workflows/minimal.yml@main
