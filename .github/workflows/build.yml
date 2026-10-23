@@ -9,4 +9,5 @@ jobs:
     uses: rkamradt/ci-workflows/.github/workflows/node-image.yml@main
     with:
       helm-chart-dir: api-gateway
-    secrets: inherit
+    secrets:
+      HELM_CHARTS_PAT: ${{ secrets.HELM_CHARTS_PAT }}
