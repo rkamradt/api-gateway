@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    uses: rkamradt/ci-workflows/.github/workflows/with-perms.yml@main
+    uses: rkamradt/ci-workflows/.github/workflows/bool-only.yml@main
     with:
       helm-chart-dir: api-gateway
     secrets: inherit
